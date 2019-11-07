@@ -1,54 +1,51 @@
 package com.github.sejoslaw.catchEverythingInBook;
 
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.LiteralText;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class CatchBlockHandler {
+public class CatchBlockHandler implements UseBlockCallback {
     public static final String BLOCK_NBT_TAG = "BLOCK_NBT_TAG";
     public static final String BLOCK_NBT_STATE_ID = "BLOCK_NBT_STATE_ID";
 
     private int counter = 0;
 
-    @SubscribeEvent
-    public void onRightClick(PlayerInteractEvent.RightClickBlock event) {
+    public ActionResult interact(PlayerEntity playerEntity, World world, Hand hand, BlockHitResult blockHitResult) {
         if (counter > 0) {
             counter = 0;
-            return;
+            return ActionResult.PASS;
         }
 
-        PlayerEntity player = event.getPlayer();
-        World world = event.getWorld();
-        BlockPos pos = event.getPos();
-
-        if (!player.isSneaking() || !(player instanceof ServerPlayerEntity)) {
-            return;
+        if (!playerEntity.isSneaking() || !(playerEntity instanceof ServerPlayerEntity)) {
+            return ActionResult.PASS;
         }
 
-        ItemStack bookStack = player.getHeldItemMainhand();
-        CompoundNBT bookNbt = bookStack.getOrCreateTag();
+        ItemStack bookStack = playerEntity.getMainHandStack();
+        CompoundTag bookNbt = bookStack.getOrCreateTag();
 
         if (bookStack.getItem() == Items.BOOK && bookStack.getCount() == 1) {
-            handleSave(world, player, pos);
+            handleSave(world, playerEntity, blockHitResult.getBlockPos());
         } else if (bookStack.getItem() == Items.ENCHANTED_BOOK && bookNbt.contains(BLOCK_NBT_TAG)) {
-            Direction offset = event.getFace();
-            handleLoad(world, player, bookStack, pos, offset);
+            Direction offset = blockHitResult.getSide();
+            handleLoad(world, playerEntity, bookStack, blockHitResult.getBlockPos(), offset);
         }
 
         counter++;
+        return ActionResult.SUCCESS;
     }
 
     private void handleSave(World world, PlayerEntity player, BlockPos pos) {
@@ -56,32 +53,32 @@ public class CatchBlockHandler {
         Block block = blockState.getBlock();
 
         ItemStack bookWithDataStack = new ItemStack(Items.ENCHANTED_BOOK);
-        bookWithDataStack.setDisplayName(new StringTextComponent("Block: " + block.getNameTextComponent().getFormattedText()));
+        bookWithDataStack.setCustomName(new LiteralText("Block: " + block.getName().asFormattedString()));
 
-        CompoundNBT bookWithDataNbt = bookWithDataStack.getTag();
-        bookWithDataNbt.put(BLOCK_NBT_TAG, new CompoundNBT());
+        CompoundTag bookWithDataNbt = bookWithDataStack.getTag();
+        bookWithDataNbt.put(BLOCK_NBT_TAG, new CompoundTag());
         bookWithDataNbt = bookWithDataNbt.getCompound(BLOCK_NBT_TAG);
 
-        int stateId = Block.getStateId(blockState);
+        int stateId = Block.getRawIdFromState(blockState);
         bookWithDataNbt.putInt(BLOCK_NBT_STATE_ID, stateId);
 
-        TileEntity tileEntity = world.getTileEntity(pos);
+        BlockEntity tileEntity = world.getBlockEntity(pos);
 
         if (tileEntity != null) {
-            tileEntity.write(bookWithDataNbt);
-            bookWithDataStack.setDisplayName(new StringTextComponent("[TileEntity] " + bookWithDataStack.getDisplayName().getFormattedText()));
-            world.removeTileEntity(pos);
+            tileEntity.toTag(bookWithDataNbt);
+            bookWithDataStack.setCustomName(new LiteralText("[BlockEntity] " + bookWithDataStack.getName().asFormattedString()));
+            world.removeBlockEntity(pos);
             bookWithDataNbt.remove("x");
             bookWithDataNbt.remove("y");
             bookWithDataNbt.remove("z");
         }
 
-        player.setItemStackToSlot(EquipmentSlotType.MAINHAND, bookWithDataStack);
+        player.setStackInHand(Hand.MAIN_HAND, bookWithDataStack);
         world.setBlockState(pos, Blocks.AIR.getDefaultState());
     }
 
     private void handleLoad(World world, PlayerEntity player, ItemStack bookStack, BlockPos pos, Direction offset) {
-        CompoundNBT bookNbt = bookStack.getTag();
+        CompoundTag bookNbt = bookStack.getTag();
 
         if (!bookNbt.contains(BLOCK_NBT_TAG)) {
             return;
@@ -90,25 +87,25 @@ public class CatchBlockHandler {
         bookNbt = bookNbt.getCompound(BLOCK_NBT_TAG);
         pos = pos.offset(offset);
 
-        if (!world.isAirBlock(pos)) {
+        if (!world.isAir(pos)) {
             return;
         }
 
         int stateId = bookNbt.getInt(BLOCK_NBT_STATE_ID);
-        BlockState blockState = Block.getStateById(stateId);
+        BlockState blockState = Block.getStateFromRawId(stateId);
 
         world.setBlockState(pos, blockState);
-        world.notifyNeighborsOfStateChange(pos, blockState.getBlock());
+        world.updateNeighborsAlways(pos, blockState.getBlock());
 
-        TileEntity tile = world.getTileEntity(pos);
+        BlockEntity tileEntity = world.getBlockEntity(pos);
 
-        if (tile != null) {
+        if (tileEntity != null) {
             bookNbt.putInt("x", pos.getX());
             bookNbt.putInt("y", pos.getY());
             bookNbt.putInt("z", pos.getZ());
-            tile.read(bookNbt);
+            tileEntity.fromTag(bookNbt);
         }
 
-        player.setItemStackToSlot(EquipmentSlotType.MAINHAND, new ItemStack(Items.BOOK));
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.BOOK));
     }
 }

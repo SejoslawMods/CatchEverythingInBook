@@ -1,14 +1,16 @@
 package com.github.sejoslaw.catchEverythingInBook;
 
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.Mod;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 
-@Mod(CatchEverythingInBook.MODID)
-public class CatchEverythingInBook {
-    public static final String MODID = "catcheverythinginbook";
+public class CatchEverythingInBook implements ModInitializer {
+    public void onInitialize() {
+        // Block
+        UseBlockCallback.EVENT.register(new CatchBlockHandler());
 
-    public CatchEverythingInBook() {
-        MinecraftForge.EVENT_BUS.register(new CatchBlockHandler());
-        MinecraftForge.EVENT_BUS.register(new CatchEntityHandler());
+        // Entity
+        UseEntityCallback.EVENT.register(new CatchEntityHandler());
+        UseBlockCallback.EVENT.register(new CatchEntityHandler());
     }
 }
