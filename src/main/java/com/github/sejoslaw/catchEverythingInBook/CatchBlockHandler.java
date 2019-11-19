@@ -13,6 +13,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -56,9 +57,9 @@ public class CatchBlockHandler {
         Block block = blockState.getBlock();
 
         ItemStack bookWithDataStack = new ItemStack(Items.ENCHANTED_BOOK);
-        bookWithDataStack.setDisplayName(new StringTextComponent("Block: " + block.getNameTextComponent().getFormattedText()));
+        bookWithDataStack.setDisplayName(new StringTextComponent("Block: " + new TranslationTextComponent(block.getTranslationKey()).getFormattedText()));
 
-        CompoundNBT bookWithDataNbt = bookWithDataStack.getTag();
+        CompoundNBT bookWithDataNbt = bookWithDataStack.getOrCreateTag();
         bookWithDataNbt.put(BLOCK_NBT_TAG, new CompoundNBT());
         bookWithDataNbt = bookWithDataNbt.getCompound(BLOCK_NBT_TAG);
 
