@@ -11,6 +11,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -53,7 +54,7 @@ public class CatchBlockHandler implements UseBlockCallback {
         Block block = blockState.getBlock();
 
         ItemStack bookWithDataStack = new ItemStack(Items.ENCHANTED_BOOK);
-        bookWithDataStack.setCustomName(new LiteralText("Block: " + block.getName().asFormattedString()));
+        bookWithDataStack.setCustomName(new LiteralText("Block: " + new TranslatableText(block.getTranslationKey(), new Object[0]).asFormattedString()));
 
         CompoundTag bookWithDataNbt = bookWithDataStack.getTag();
         bookWithDataNbt.put(BLOCK_NBT_TAG, new CompoundTag());
