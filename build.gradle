@@ -13,14 +13,14 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '1.14.4-1.0.1-forge'
+version = '1.15.2-1.0.1-forge'
 group = 'com.github.sejoslaw.catchEverythingInBook.CatchEverythingInBook' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'CatchEverythingInBook'
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
 
 minecraft {
-    mappings channel: 'snapshot', version: '20190719-1.14.3'
+    mappings channel: 'snapshot', version: '20200514-1.15.1'
 
     runs {
         client {
@@ -50,7 +50,7 @@ minecraft {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.14.4-28.1.0'
+    minecraft 'net.minecraftforge:forge:1.15.2-31.2.29'
 }
 
 jar {

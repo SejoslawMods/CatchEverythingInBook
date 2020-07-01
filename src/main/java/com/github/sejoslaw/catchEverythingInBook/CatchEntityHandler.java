@@ -104,7 +104,7 @@ public class CatchEntityHandler {
         entity.read(bookNbt);
         entity.dimension = player.dimension;
         entity.setLocationAndAngles(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, 0, 0);
-        ((ServerWorld)world).func_217460_e(entity);
+        ((ServerWorld)world).summonEntity(entity);
 
         player.setItemStackToSlot(EquipmentSlotType.MAINHAND, new ItemStack(Items.BOOK));
     }
