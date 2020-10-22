@@ -3,6 +3,9 @@ package com.github.sejoslaw.catchEverythingInBook;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 
+/**
+ * @author Sejoslaw - https://github.com/Sejoslaw
+ */
 @Mod(CatchEverythingInBook.MODID)
 public class CatchEverythingInBook {
     public static final String MODID = "catcheverythinginbook";

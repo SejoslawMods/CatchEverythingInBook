@@ -18,6 +18,9 @@ import net.minecraft.world.World;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
+/**
+ * @author Sejoslaw - https://github.com/Sejoslaw
+ */
 public class CatchBlockHandler {
     public static final String BLOCK_NBT_TAG = "BLOCK_NBT_TAG";
     public static final String BLOCK_NBT_STATE_ID = "BLOCK_NBT_STATE_ID";
@@ -57,7 +60,7 @@ public class CatchBlockHandler {
         Block block = blockState.getBlock();
 
         ItemStack bookWithDataStack = new ItemStack(Items.ENCHANTED_BOOK);
-        bookWithDataStack.setDisplayName(new StringTextComponent("Block: " + new TranslationTextComponent(block.getTranslationKey()).getFormattedText()));
+        bookWithDataStack.setDisplayName(new StringTextComponent("Block: " + new TranslationTextComponent(block.getTranslationKey()).getString()));
 
         CompoundNBT bookWithDataNbt = bookWithDataStack.getOrCreateTag();
         bookWithDataNbt.put(BLOCK_NBT_TAG, new CompoundNBT());
@@ -70,7 +73,7 @@ public class CatchBlockHandler {
 
         if (tileEntity != null) {
             tileEntity.write(bookWithDataNbt);
-            bookWithDataStack.setDisplayName(new StringTextComponent("[TileEntity] " + bookWithDataStack.getDisplayName().getFormattedText()));
+            bookWithDataStack.setDisplayName(new StringTextComponent("[TileEntity] " + bookWithDataStack.getDisplayName().getString()));
             world.removeTileEntity(pos);
             bookWithDataNbt.remove("x");
             bookWithDataNbt.remove("y");
@@ -107,7 +110,7 @@ public class CatchBlockHandler {
             bookNbt.putInt("x", pos.getX());
             bookNbt.putInt("y", pos.getY());
             bookNbt.putInt("z", pos.getZ());
-            tile.read(bookNbt);
+            tile.read(tile.getBlockState(), bookNbt);
         }
 
         player.setItemStackToSlot(EquipmentSlotType.MAINHAND, new ItemStack(Items.BOOK));

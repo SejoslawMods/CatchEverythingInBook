@@ -1,7 +1,6 @@
 package com.github.sejoslaw.catchEverythingInBook;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
@@ -9,16 +8,21 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.registries.ForgeRegistries;
 
+/**
+ * @author Sejoslaw - https://github.com/Sejoslaw
+ */
 public class CatchEntityHandler {
     public static final String ENTITY_NBT = "ENTITY_NBT";
-    public static final String ENTITY_CLASS = "ENTITY_CLASS";
+    public static final String ENTITY_TYPE = "ENTITY_TYPE";
+    public static final String ENTITY_NAME = "ENTITY_NAME";
 
     private int counterCapture = 0;
     private int counterRelease = 0;
@@ -76,35 +80,29 @@ public class CatchEntityHandler {
         ItemStack bookStack = new ItemStack(Items.ENCHANTED_BOOK);
         CompoundNBT bookNbt = bookStack.getOrCreateTag();
 
-        target.writeWithoutTypeId(bookNbt);
-        bookNbt.putString(ENTITY_NBT, target.getEntityString());
-        bookNbt.putString(ENTITY_CLASS, target.getClass().getCanonicalName());
-        bookStack.setDisplayName(new StringTextComponent("Entity: " + target.getName().getFormattedText()));
+        CompoundNBT entityNbt = new CompoundNBT();
+        target.writeUnlessRemoved(entityNbt);
+
+        bookNbt.put(ENTITY_NBT, entityNbt);
+        bookNbt.putString(ENTITY_TYPE, target.getType().getRegistryName().toString());
+        bookNbt.putString(ENTITY_NAME, target.getName().getString());
+        bookStack.setDisplayName(new StringTextComponent("Entity: " + target.getName().getString()));
+
         target.remove();
 
         player.setItemStackToSlot(EquipmentSlotType.MAINHAND, bookStack);
     }
 
     private void handleRelease(World world, PlayerEntity player, ItemStack bookStack, BlockPos pos, Direction offset) {
-        pos = pos.offset(offset);
-
         CompoundNBT bookNbt = bookStack.getOrCreateTag();
-        String entityClass = bookNbt.getString(ENTITY_CLASS);
-        String entityTypeName = bookNbt.getString(ENTITY_NBT);
-        EntityType<?> entityType = EntityType.byKey(entityTypeName).get(); // TODO: Fix
-        Entity entity;
 
-        try {
-            entity = (Entity) Class.forName(entityClass).getConstructor(EntityType.class, World.class).newInstance(entityType, world);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
+        String type = bookNbt.getString(ENTITY_TYPE);
+        Entity entity = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(type)).create(world);
+        entity.read(bookNbt.getCompound(ENTITY_NBT));
 
-        entity.read(bookNbt);
-        entity.dimension = player.dimension;
-        entity.setLocationAndAngles(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, 0, 0);
-        ((ServerWorld)world).summonEntity(entity);
+        BlockPos spawnPos = pos.offset(offset);
+        entity.setLocationAndAngles(spawnPos.getX() + 0.5D, spawnPos.getY() + 0.5d, spawnPos.getZ() + 0.5D, 0, 0);
+        world.addEntity(entity);
 
         player.setItemStackToSlot(EquipmentSlotType.MAINHAND, new ItemStack(Items.BOOK));
     }
